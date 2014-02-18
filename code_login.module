@@ -1,0 +1,102 @@
+<?php
+/**
+  * Implement hook_help()
+  */
+function code_login_help($path, $arg) {
+  $help = '';
+  switch ($path) {
+    case 'admin/help#code_login':
+      $help  = '<h3>' . t('Code login Module') . '</h3>';
+      $help .= '<p>' . t("This module allow users to login with Italian Codice Fiscale instead of default Username") . '<br>';
+      $help .= t("By default, validation check is performed only on user-register, allowing super-user to login with it's own username. To extend validation to user-login (and force super-user to login the same way) follow the instructions in code_login.module file") . '</p>';
+      break;
+
+    default:
+      break;
+   }
+   if (!empty($help)) {
+    return $help;
+  }
+ }
+
+/**
+ * Implements hook_form_alter().
+ */
+function code_login_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'user_profile_form':
+      $form['account']['name']['#title'] = "Codice fiscale";
+      $form['account']['name']['#description'] = "Inserire il codice fiscale utilizzando solo lettere e numeri (spazi, trattini o altri caratteri non sono ammessi)";
+      break;
+
+    case 'user_register_form':
+      $form['account']['name']['#title'] = "Codice fiscale";
+      $form['account']['name']['#description'] = "Inserire il codice fiscale utilizzando solo lettere e numeri (spazi, trattini o altri caratteri non sono ammessi)";
+
+      // Add Codice Fiscale validation
+      $form['#validate'][] = 'code_login_validate_cf';
+      break;
+
+    case 'user_login':
+      $form['name']['#title'] = "Codice fiscale";
+      $form['name']['#description'] = "Inserire il codice fiscale utilizzando solo lettere e numeri (spazi, trattini o altri caratteri non sono ammessi)";
+      $form['pass']['#description'] = "Inserisci la password associata al tuo Codice Fiscale";
+
+      // Add Codice Fiscale validation.
+      // Uncomment the line bolow to perform code validation also on login: this will force super-user to login with its own Codice Fiscale.
+      //$form['#validate'][] = 'code_login_validate_cf';
+      break;
+
+    case 'user_pass':
+      $form['name']['#title'] = "Codice Fiscale o indirizzo e-mail";
+      break;
+
+    case 'user_login_block':
+      $form['name']['#title'] = "Codice Fiscale";
+
+      // Add Codice Fiscale validation.
+      // Uncomment the line bolow to perform code validation also on login: this will force super-user to login with its own Codice Fiscale.
+      //$form['#validate'][] = 'code_login_validate_cf';
+      break;
+
+    default:
+      break;
+  }
+}
+
+/**
+ * Verify Codice Fiscale Italiano (TIN, Tax Identification Number).
+ *
+ * Verify of Codice Fiscale to natural, artificial, legal and juristic
+ * person, with and without OMOCODIA.
+ * Verifica del codice fiscale per persone fisiche e persone giuridiche, anche
+ * in caso di omocodia.
+ */
+function code_login_validate_cf($form, &$form_state) {
+
+  $pattern = "/^([A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1})|([0-9]{11})$/i";
+
+  $cf = strtoupper($form_state['values']['name']);
+
+  if (!preg_match($pattern, $cf)) {
+    form_set_error('name','Codice Fiscale errato');
+  }
+  else {
+    // Store Codice Fiscale always uppercase
+    $form_state['values']['name'] = $cf;
+  }
+}
+
+
+
+/**
+ * Implements hook_permissions().
+ */
+function code_login_permission() {
+  return array(
+    'by-pass code login' => array(
+      'title' => t('By-pass Code Login'),
+      'description' => t('By-pass Code login and access with own username.'),
+    ),
+  );
+}

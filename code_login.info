@@ -1,0 +1,5 @@
+name = Code login
+description = Allow login with Italian Codice Fiscale instead of default username.
+core = 7.x
+
+version = "7.x-1.0"
